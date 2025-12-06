@@ -1,4 +1,9 @@
 #include "SpeechManager.h"
+#include <deque>
+#include <algorithm>
+#include <functional>
+#include <numeric>
+#include <map>
 
 //构造函数
 SpeechManager::SpeechManager()
@@ -108,6 +113,89 @@ void SpeechManager::SpeakerDraw()
     }
 }
 
+//正式比赛
+void SpeechManager::SpeechProcess()
+{
+    vector<int> vTemp; //比赛过程专用的临时容器
+    if (this->m_Round == 1)
+    {
+        vTemp = this->m_vSpeaker;
+    }
+    else
+    {
+        vTemp = this->m_vRound1Speaker;
+    }
+
+    multimap<double, int, greater<double>> mTemp; //每位选手的“平均分-编号”的键值对，注意是key值是平均分不是编号，方便降序排序筛选前三名
+
+    cout << "------第 " << this->m_Round << " 轮的比赛开始------" << endl;
+
+    //对每个选手进行操作
+    for (int i = 0; i < vTemp.size(); i++)
+    {
+        //1、打分
+        deque<double> d; //存放每个选手的分数
+        //假设10个评委
+        for (int j = 0; j < 10; j++)
+        {
+            double score = rand() % 16 + 80; //分数80~95之间
+            d.push_back(score);
+        }
+        sort(d.begin(), d.end(), greater<double>()); //降序排列
+        //去除最高分和最低分
+        d.pop_back();
+        d.pop_front();
+        //计算均分
+        double sum = accumulate(d.begin(), d.end(), 0); //需要包含numeric头文件
+        double avg = sum / d.size();
+        //测试打印公示分数
+        //cout << "编号为 " << vTemp[i] << " 的选手的得分为：" << avg << endl;
+        
+
+        //2、将均分存入multimap，和mScore数组中
+        mTemp.insert({ avg,vTemp[i] });
+        this->m_mSpeaker[vTemp[i]].setScore(this->m_Round, avg); //存入mScore数组，难想啊
+
+
+        //3、晋级：比赛的共性——每组取前三
+        //每6人为一组，进行判断
+        if (i % 6 == 0)
+        {
+            //sort(mTemp.begin(), mTemp.end(), greater<double>()); //根据分数降序排序multimap，错的，怎么能对multimap使用sort呢
+            //第一轮
+            if (this->m_Round == 1)
+            {
+                int groupNum = 1; //第几组
+                int rank = 1; //小组名次
+                cout << "第 " << groupNum << " 组的晋级选手依次是：" << endl;
+                for (multimap<double, int, greater<double>()>::iterator it = mTemp.begin(); it != ++++++mTemp.begin(); it++) //这里multimap的类型也要改，加上排序方式
+                {
+                    cout << "第 " << rank << " 名选手：";
+                    cout << "选手姓名：" << this->m_mSpeaker[it->second].getName() << " ";
+                    cout << "选手编号：" << it->second << " ";
+                    cout << "选手得分：" << it->first << endl;
+
+                    groupNum++;
+                    rank++;
+                }
+            }
+            //第二轮
+            else
+            {
+                cout << "最终获胜的选手依次是：" << endl;
+                int rank = 1;
+                for (multimap<double, int, greater<double>>::iterator it = mTemp.begin(); it != ++++++mTemp.begin(); it++) //这里multimap的类型也要改，加上排序方式
+                {
+                    cout << "第 " << rank << " 名选手：";
+                    cout << "选手姓名：" << this->m_mSpeaker[it->second].getName() << " ";
+                    cout << "选手编号：" << it->second << " ";
+                    cout << "选手得分：" << it->first << endl;
+                }
+            }
+        }
+    }
+}
+
 //开始比赛
 void SpeechManager::startSpeech()
 {
@@ -119,16 +207,16 @@ void SpeechManager::startSpeech()
     //抽签
     this->SpeakerDraw();
     //比赛
-
+    this->SpeechProcess();
 
     //结果
 
 
     //第二轮比赛
     //抽签
-    this->SpeakerDraw();
+    //this->SpeakerDraw();
     //比赛
-
+    //this->SpeechProcess();
 
     //结果
 

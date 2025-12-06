@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <algorithm>
 #include "Speaker.h"
 using namespace std;
 
@@ -31,10 +30,12 @@ public:
 	void createSpeaker();
 	//抽签
 	void SpeakerDraw();
+	//正式比赛
+	void SpeechProcess();
 	//退出系统
 	void exitSystem();
 	//析构函数
 	~SpeechManager();
-
-	void test1();
+	//测试函数
+	//void test1();
 };
