@@ -1,0 +1,35 @@
+#pragma once
+#include <iostream>
+#include <vector>
+#include <map>
+#include "Speaker.h"
+using namespace std;
+
+//管理类
+class SpeechManager
+{
+	//选手容器
+	vector<int> m_vSpeaker; //初始12人数组
+	vector<int> m_vRound1Speaker; //第一轮赛后6人晋级者
+	vector<int> m_vWinnerSpeaker; //第二轮赛后3人获胜者
+	map<int, Speaker> m_mSpeaker; //编号-选手 键值对
+
+	//比赛情况
+	int m_Round; //轮次
+
+public:
+	//构造函数
+	SpeechManager();
+	//展示菜单
+	void showMenu();
+	//初始化比赛
+	void initSpeech();
+	//创建选手
+	void createSpeaker();
+	//退出系统
+	void exitSystem();
+	//析构函数
+	~SpeechManager();
+
+	void test1();
+};

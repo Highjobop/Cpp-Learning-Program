@@ -1,0 +1,37 @@
+#include "SpeechManager.h"
+
+int main()
+{
+	//创建管理类对象
+	SpeechManager sm;
+
+	while (true)
+	{
+		//展示菜单
+		sm.showMenu();
+
+		int choice; //用户输入
+		cout << "请输入你的选择：";
+		cin >> choice;
+
+		switch (choice)
+		{
+		case 1:  //1.开始演讲比赛
+			sm.initSpeech();
+			sm.createSpeaker();
+			break;
+		case 2:  //2.查看往届记录
+
+			break;
+		case 3:  //3.清空比赛记录
+
+			break;
+		case 0:  //0.退出比赛程序
+			sm.exitSystem();
+			break;
+		default:
+			system("cls");
+			break;
+		}
+	}
+}
