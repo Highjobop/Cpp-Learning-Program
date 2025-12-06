@@ -2,6 +2,9 @@
 
 int main()
 {
+	//随机数
+	srand((unsigned int)time(nullptr));
+
 	//创建管理类对象
 	SpeechManager sm;
 
@@ -17,8 +20,7 @@ int main()
 		switch (choice)
 		{
 		case 1:  //1.开始演讲比赛
-			sm.initSpeech();
-			sm.createSpeaker();
+			sm.startSpeech();
 			break;
 		case 2:  //2.查看往届记录
 

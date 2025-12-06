@@ -33,13 +33,13 @@ void SpeechManager::initSpeech()
 //创建选手
 void SpeechManager::createSpeaker()
 {
-    //选手姓名赋值
-    string nameTemp = "选手";
+    //选手姓名赋值    
     string nameSeed = "ABCDEFGHIJKL";
     for (int i = 0; i < 12; i++)
     {
         //选手姓名
-        nameTemp += nameSeed[i];
+        string nameTemp = "选手";
+        nameTemp += nameSeed[i]; //名字格式：选手A
         Speaker sTemp(nameTemp);
 
         //选手分数，初始化
@@ -56,14 +56,86 @@ void SpeechManager::createSpeaker()
 }
 
 //测试1
-void SpeechManager::test1()
+//void SpeechManager::test1()
+//{
+//    for (int i = 0; i < 12; i++)
+//    {
+//        cout << this->m_vSpeaker[i] << " ";   
+//        cout << (this->m_mSpeaker.find(i + 10001))->second.getName() << " ";
+//        cout << endl;
+//    }
+//}
+
+//抽签
+void SpeechManager::SpeakerDraw()
 {
-    for (int i = 0; i < 12; i++)
+    this->m_Round++; //轮数+1
+    //第一轮
+    if (this->m_Round == 1)
     {
-        cout << this->m_vSpeaker[i] << " ";       
-        cout << this->m_mSpeaker[i + 10001].getName() << " ";
+        random_shuffle(this->m_vSpeaker.begin(), this->m_vSpeaker.end()); //洗牌打乱
+        cout << "开始进行第 " << this->m_Round << " 轮的抽签" << endl;
+        cout << "-----------------------------" << endl;
+        cout << "抽签结果如下：" << endl;
+        cout << "第 1 小组的选手编号依次为：" << endl;
+        for (int i = 0; i < 6; i++)
+        {
+            cout << this->m_vSpeaker[i] << " ";
+        }
         cout << endl;
+        cout << "第 2 小组的选手编号依次为：" << endl;
+        for (int i = 6; i < 12; i++)
+        {
+            cout << this->m_vSpeaker[i] << " ";
+        }
+        cout << endl;
+        system("pause");
     }
+    //第二轮
+    else
+    {
+        random_shuffle(this->m_vRound1Speaker.begin(), this->m_vRound1Speaker.end()); //洗牌打乱
+        cout << "开始进行第 " << this->m_Round << " 轮的抽签" << endl;
+        cout << "-----------------------------" << endl;
+        cout << "抽签结果如下：" << endl;
+        cout << "选手编号依次为：" << endl;
+        for (int i = 0; i < 6; i++)
+        {
+            cout << this->m_vRound1Speaker[i] << " ";
+        }
+        cout << endl;       
+        system("pause");
+    }
+}
+
+//开始比赛
+void SpeechManager::startSpeech()
+{
+    //准备
+    this->initSpeech();
+    this->createSpeaker();
+
+    //第一轮比赛
+    //抽签
+    this->SpeakerDraw();
+    //比赛
+
+
+    //结果
+
+
+    //第二轮比赛
+    //抽签
+    this->SpeakerDraw();
+    //比赛
+
+
+    //结果
+
+
+    //分数
+
+
 }
 
 //退出系统
