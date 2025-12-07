@@ -126,22 +126,28 @@ void SpeechManager::SpeechProcess()
         vTemp = this->m_vRound1Speaker;
     }
 
-    multimap<double, int, greater<double>> mTemp; //每位选手的“平均分-编号”的键值对，注意是key值是平均分不是编号，方便降序排序筛选前三名
+    //每位选手的“平均分-编号”的键值对，注意是key值是平均分不是编号，方便降序排序筛选前三名；
+    //注意定义时就要写排序方式 greater<double>
+    multimap<double, int, greater<double>> mTemp; 
 
     cout << "------第 " << this->m_Round << " 轮的比赛开始------" << endl;
+    cout << "正在进行激烈的比赛，结果马上出来！" << endl;
+    system("pause");
+
+    cout << "-----第 " << this->m_Round << " 轮的结果已产生-----" << endl;
 
     //对每个选手进行操作
     for (int i = 0; i < vTemp.size(); i++)
     {
         //1、打分
-        deque<double> d; //存放每个选手的分数
+        deque<int> d; //存放每个选手的分数，每个评委打的分是 int，最后均分是 double
         //假设10个评委
         for (int j = 0; j < 10; j++)
         {
-            double score = rand() % 16 + 80; //分数80~95之间
+            int score = rand() % 16 + 80; //分数80~95之间
             d.push_back(score);
         }
-        sort(d.begin(), d.end(), greater<double>()); //降序排列
+        sort(d.begin(), d.end(), greater<int>()); //降序排列
         //去除最高分和最低分
         d.pop_back();
         d.pop_front();
@@ -157,26 +163,32 @@ void SpeechManager::SpeechProcess()
         this->m_mSpeaker[vTemp[i]].setScore(this->m_Round, avg); //存入mScore数组，难想啊
 
 
-        //3、晋级：比赛的共性——每组取前三
+        //3、晋级/出结果：比赛的共性——每组取前三
         //每6人为一组，进行判断
-        if (i % 6 == 0)
+        if ((i + 1) % 6 == 0)  //注意是 i + 1，不是 i，从 0 开始计数
         {
             //sort(mTemp.begin(), mTemp.end(), greater<double>()); //根据分数降序排序multimap，错的，怎么能对multimap使用sort呢
             //第一轮
             if (this->m_Round == 1)
             {
-                int groupNum = 1; //第几组
                 int rank = 1; //小组名次
-                cout << "第 " << groupNum << " 组的晋级选手依次是：" << endl;
-                for (multimap<double, int, greater<double>()>::iterator it = mTemp.begin(); it != ++++++mTemp.begin(); it++) //这里multimap的类型也要改，加上排序方式
+                int groupNum = (i + 1) / 6; //第几组，可以直接计算出来
+                cout << "第 " << groupNum << " 小组的晋级选手依次是：" << endl;
+
+                //这里multimap的类型也要改，加上greater<double>
+                //++++++mTemp.begin() 可以这么写吗，为了找到前三名?
+                //不可以，map、set不可以这样连续给begin()多个++（写一个++可以），也不可以 + N；支持随机访问的容器可以v.begin()+3
+                //现在把 rank 也放入，巧妙解决了只取 3 项的问题
+                //注意 一个是 &&，一个是 ,  （若for循环有两个表达式，第二项（条件判断）里面用 && 或 ||，第一项和第三项用 ,）
+                for (multimap<double, int, greater<double>>::iterator it = mTemp.begin(); it != mTemp.end() && rank <= 3; it++, rank++)
                 {
                     cout << "第 " << rank << " 名选手：";
                     cout << "选手姓名：" << this->m_mSpeaker[it->second].getName() << " ";
                     cout << "选手编号：" << it->second << " ";
                     cout << "选手得分：" << it->first << endl;
 
-                    groupNum++;
-                    rank++;
+                    //将结果存入对应容器中
+                    this->m_vRound1Speaker.push_back(it->second);                    
                 }
             }
             //第二轮
@@ -184,15 +196,32 @@ void SpeechManager::SpeechProcess()
             {
                 cout << "最终获胜的选手依次是：" << endl;
                 int rank = 1;
-                for (multimap<double, int, greater<double>>::iterator it = mTemp.begin(); it != ++++++mTemp.begin(); it++) //这里multimap的类型也要改，加上排序方式
+                for (multimap<double, int, greater<double>>::iterator it = mTemp.begin(); it != mTemp.end() && rank <= 3; it++, rank++)
                 {
                     cout << "第 " << rank << " 名选手：";
                     cout << "选手姓名：" << this->m_mSpeaker[it->second].getName() << " ";
                     cout << "选手编号：" << it->second << " ";
                     cout << "选手得分：" << it->first << endl;
+
+                    //将结果存入对应容器中
+                    this->m_vWinnerSpeaker.push_back(it->second);                    
                 }
             }
+            //清空mTemp，否则第一轮第2组不是6个人比，是12个人比
+            mTemp.clear();
         }
+    }
+    //结尾
+    if (this->m_Round == 1)
+    {
+        //衔接第二轮
+        cout << "第一轮比赛已结束，让我们恭喜进入决赛的 6 位选手！" << endl;
+        system("pause");
+    }
+    else
+    {
+        system("pause");
+        system("cls");
     }
 }
 
@@ -214,9 +243,9 @@ void SpeechManager::startSpeech()
 
     //第二轮比赛
     //抽签
-    //this->SpeakerDraw();
+    this->SpeakerDraw();
     //比赛
-    //this->SpeechProcess();
+    this->SpeechProcess();
 
     //结果
 
