@@ -23,10 +23,10 @@ int main()
 			sm.startSpeech();
 			break;
 		case 2:  //2.查看往届记录
-
+			sm.showRecord();
 			break;
 		case 3:  //3.清空比赛记录
-
+			sm.clearRecord();
 			break;
 		case 0:  //0.退出比赛程序
 			sm.exitSystem();

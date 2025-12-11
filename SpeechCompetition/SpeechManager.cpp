@@ -4,11 +4,16 @@
 #include <functional>
 #include <numeric>
 #include <map>
+#include <fstream>
 
 //构造函数
 SpeechManager::SpeechManager()
 {
     this->initSpeech();
+
+    this->m_Count = 0;  //之前写到initSpeech()里面了，导致每次比赛开始都清零
+
+    this->loadRecord();
 }
 
 //展示菜单
@@ -27,12 +32,15 @@ void SpeechManager::showMenu()
 //初始化比赛数据
 void SpeechManager::initSpeech()
 {
-    this->m_Round = 0; //C++允许类的成员函数访问同一类任何对象的私有成员
+    //C++允许类的成员函数访问同一类任何对象的私有成员
+    this->m_Round = 0;
+
     //清空容器
     this->m_vSpeaker.clear();
     this->m_vRound1Speaker.clear();
     this->m_vWinnerSpeaker.clear();
     this->m_mSpeaker.clear();
+    this->m_mTotalRecord.clear();
 }
 
 //创建选手
@@ -74,7 +82,8 @@ void SpeechManager::createSpeaker()
 //抽签
 void SpeechManager::SpeakerDraw()
 {
-    this->m_Round++; //轮数+1
+    //轮数+1
+    this->m_Round++;
     //第一轮
     if (this->m_Round == 1)
     {
@@ -126,7 +135,7 @@ void SpeechManager::SpeechProcess()
         vTemp = this->m_vRound1Speaker;
     }
 
-    //每位选手的“平均分-编号”的键值对，注意是key值是平均分不是编号，方便降序排序筛选前三名；
+    //临时容器存放小组成绩，每位选手的“平均分-编号”的键值对，注意是key值是平均分不是编号，方便降序排序筛选前三名；
     //注意定义时就要写排序方式 greater<double>
     multimap<double, int, greater<double>> mTemp; 
 
@@ -152,15 +161,16 @@ void SpeechManager::SpeechProcess()
         d.pop_back();
         d.pop_front();
         //计算均分
-        double sum = accumulate(d.begin(), d.end(), 0); //需要包含numeric头文件
+        double sum = accumulate(d.begin(), d.end(), 0.0); //需要包含numeric头文件
         double avg = sum / d.size();
+        avg = round(avg * 100) / 100;  //保留2位小数
         //测试打印公示分数
         //cout << "编号为 " << vTemp[i] << " 的选手的得分为：" << avg << endl;
         
 
         //2、将均分存入multimap，和mScore数组中
         mTemp.insert({ avg,vTemp[i] });
-        this->m_mSpeaker[vTemp[i]].setScore(this->m_Round, avg); //存入mScore数组，难想啊
+        this->m_mSpeaker[vTemp[i]].setScore(this->m_Round, avg); //存入mScore数组，难想啊，正好有一个 map，存放了 编号-选手
 
 
         //3、晋级/出结果：比赛的共性——每组取前三
@@ -207,7 +217,7 @@ void SpeechManager::SpeechProcess()
                     this->m_vWinnerSpeaker.push_back(it->second);                    
                 }
             }
-            //清空mTemp，否则第一轮第2组不是6个人比，是12个人比
+            //清空mTemp，否则第一轮第2组不是6个人比，是12个人比（mTemp存放的是临时6人小组的分数）
             mTemp.clear();
         }
     }
@@ -220,8 +230,10 @@ void SpeechManager::SpeechProcess()
     }
     else
     {
+        this->m_Count++; //场次+1（比赛完完整的一场）
+        cout<< "-----第 " << this->m_Count << " 场比赛顺利结束-----" << endl;
+
         system("pause");
-        system("cls");
     }
 }
 
@@ -238,21 +250,206 @@ void SpeechManager::startSpeech()
     //比赛
     this->SpeechProcess();
 
-    //结果
-
-
     //第二轮比赛
     //抽签
     this->SpeakerDraw();
     //比赛
     this->SpeechProcess();
 
-    //结果
+    //保存到文件
+    this->saveRecord();
 
+    //重新初始化比赛数据
+    this->initSpeech();
 
-    //分数
+    //比赛结束
+    cout << "第 " << this->m_Count << " 场比赛已顺利结束，感谢大家的参与，让我们下次比赛再会！" << endl;
+    system("pause");
+    system("cls");
+}
 
+//保存至文件
+void SpeechManager::saveRecord()
+{
+    ofstream ofs("speech_competition_results.csv", ios::out | ios::app); //用追加的方式写.csv文件
 
+    //保存前三名的数据，使用vWinnerSpeaker容器
+    for (vector<int>::const_iterator it = this->m_vWinnerSpeaker.begin(); it != this->m_vWinnerSpeaker.end(); it++)
+    {
+        //逗号分隔，按分数降序写  编号,姓名,分数,  (分数后面也加上逗号，不然会有错，无法区分开前一个人的分数和后一个人的编号)
+        ofs << *it << "," << this->m_mSpeaker[*it].getName() << "," << this->m_mSpeaker[*it].getScore(2) << ",";
+    }
+    //一场比赛写在一行里
+    ofs << endl;
+
+    ofs.close();
+    cout << "文件记录保存完毕" << endl;
+
+    this->fileIsEmpty = false; //更新文件不为空
+}
+
+//读取文件，获取往届记录
+void SpeechManager::loadRecord()
+{
+    ifstream ifs;
+    ifs.open("speech_competition_results.csv", ios::in);
+
+    //判断文件是否为空 - 3 种情况
+    //1 文件不存在
+    if (!ifs.is_open())
+    {
+        //cout << "文件不存在" << endl;
+        this->fileIsEmpty = true;
+        ifs.close();
+        return;
+    }
+    //2 文件存在但为空
+    char ch;
+    ifs >> ch;
+    if (ifs.eof())
+    {
+        //cout << "文件为空" << endl;
+        this->fileIsEmpty = true;
+        ifs.close();
+        return;
+    }
+
+    //3 文件不为空
+    ifs.putback(ch); //回退一个字符
+
+    int tempRound = 0; //记录轮次
+
+    vector<string> vTemp; //存放文件读取出的数据，放while外面，因为之后m_mTotalRecord还要用
+
+    string data;
+    while (getline(ifs, data)) //一行一行地读，每次处理一行（一场比赛）
+    {
+        //cout << data << endl;
+
+        int start = 0; //开始操作的位置
+
+        int tempIndex = 0; //逗号的索引位置（草。一开始初始化的值是-1，下面while循环的条件是tempIndex != -1，被拒在外面了，搞了半天都没while循环里进去）
+
+        while (tempIndex != -1)
+        {
+            // find：从start位置开始查找逗号，未查到返回-1
+            //注意！！！这里的tempIndex要写在里面，之前写在外面了，就是死循环！！！！！！！！
+            //注意，又错了！写在这最后一次循环也不对，还是会多执行一次 ×  NO！NO！NO！NO！写在这里就是对的，最后一个字符串后面没有逗号！！！ ×  NO！NO！NO！NO！修改了一下，最后一个字符串后面也有逗号了
+            tempIndex = data.find(",", start); 
+
+            ////最后一次，此时在这个位置tempIndex = -1
+            // 修改了，最后一个字符串后面也有逗号了，不需要这个了
+            //if (tempIndex == -1)
+            //{
+            //    string tempString = data.substr(start);
+            //    vTemp.push_back(tempString);
+
+            //    break;
+            //}
+
+            string tempString = data.substr(start, tempIndex - start); //提取子串。tempIndex - start 一开始还写错了
+
+            vTemp.push_back(tempString); //容器是一个一个字符串存的，编号、姓名、分数依次存在一起的 
+
+            start = tempIndex + 1; //更新start位置
+
+            //tempIndex = data.find(",", start);  写在这里不对
+        }
+
+        tempRound++;
+        
+        this->m_mTotalRecord.insert({ tempRound,vTemp });  //注意：这里tempRound是从1开始存的，不是0
+
+        vTemp.clear(); //清空（每次就存这一行的数据，不累计存）
+    }
+
+    this->m_Count=this->m_mTotalRecord.size(); //更新已有场次数
+
+    this->fileIsEmpty = false; //更新文件不为空
+
+    ifs.close();
+}
+
+//显示所有比赛记录
+void SpeechManager::showRecord()
+{
+    this->loadRecord(); //先加载文件，更新一下 m_mTotalRecord 容器
+
+    // 文件的3种情况的提示
+
+    if (this->fileIsEmpty)
+    {       
+        ifstream ifs;
+        ifs.open("speech_competition_results.csv", ios::in);
+
+        //文件不存在
+        if (!ifs.is_open())
+        {
+            cout << "经查询，文件不存在。" << endl;
+            ifs.close();
+            system("pause");
+            system("cls");
+            return;
+        }
+        //文件存在但为空
+        else
+        {
+            cout << "经查询，文件为空。" << endl;
+            ifs.close();
+            system("pause");
+            system("cls");
+            return;
+        }
+    }
+
+    //文件存在且不为空
+    cout << "经查询，已经进行了 " << this->m_Count << " 场比赛。" << endl;
+    cout<<endl;
+
+    string rankName[3] = { "冠军","亚军","季军" };
+
+    for (int i = 0; i < this->m_mTotalRecord.size(); i++)  //总共的场次有两种表示方法都可以： m_Count  和  m_mTotalRecord.size()
+    {
+        cout << "第 " << i + 1 << " 届的结果如下：" << endl;
+        /*cout << "冠军：" << " 编号：" << this->m_mTotalRecord[i][0] << " 姓名：" << this->m_mTotalRecord[i][1] << " 第二轮成绩：" << this->m_mTotalRecord[i][2] << endl;
+        cout << "亚军：" << " 编号：" << this->m_mTotalRecord[i][3] << " 姓名：" << this->m_mTotalRecord[i][4] << " 第二轮成绩：" << this->m_mTotalRecord[i][5] << endl;
+        cout << "季军：" << " 编号：" << this->m_mTotalRecord[i][6] << " 姓名：" << this->m_mTotalRecord[i][7] << " 第二轮成绩：" << this->m_mTotalRecord[i][8] << endl;*/
+
+        for (int j = 0; j < 3; j++)
+        {
+            cout << rankName[j] << " | 编号：" << this->m_mTotalRecord[i + 1][j * 3] << " 姓名：" << this->m_mTotalRecord[i + 1][j * 3 + 1]
+                 << " 第二轮成绩：" << this->m_mTotalRecord[i + 1][j * 3 + 2] << endl;
+        }
+    }
+
+    system("pause");
+    system("cls");
+}
+
+//清空比赛记录
+void SpeechManager::clearRecord()
+{
+    int choice_clear;
+    cout << "请输入您的选择，确认是否真的要清空文件。" << endl;
+    cout << "1、确认清空；2、返回上一界面" << endl;
+    cin >> choice_clear;
+    
+    if (choice_clear == 1)
+    {
+        ofstream ofs;
+        ofs.open("speech_competition_results.csv", ios::trunc);
+        ofs.close();
+        cout << "文件已清空" << endl;
+
+        //初始化所有的数据和容器
+        this->initSpeech();
+
+        //更新文件状态
+        this->fileIsEmpty = true;
+    }
+   
+    system("pause");
+    system("cls");
 }
 
 //退出系统
